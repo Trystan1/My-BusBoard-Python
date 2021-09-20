@@ -7,22 +7,38 @@ logging.basicConfig(filename='BusBoard.log', filemode='w', level=logging.DEBUG)
 APP_ID = 'c3e79790'
 APP_KEY = '8f91ea0737e54199559851b2312781be'
 # Atcocode = '0180BAC30592'
-Atcocode = '490000077E'
+# Atcocode = '490000077E'
+# Atcocode = '0180BAC30345'
+# Atcocode = '0180BAC30601'
+Atcocode = '0180BAA01347'
 
 
-def timeConversion(expectedArrival):
+def timeConversion(departure):
 
-    Hour = int(expectedArrival["time"][0:2])
-    Minute = int(expectedArrival["time"][3:5])
+    expectedArrival = departure["expected"]["arrival"]
 
-    Year = int(expectedArrival["date"][0:4])
-    Month = int(expectedArrival["date"][5:7])
-    Day = int(expectedArrival["date"][8:10])
+    try:
+        Hour = int(expectedArrival["time"][0:2])
+        Minute = int(expectedArrival["time"][3:5])
+    except TypeError:
+        Hour = int(departure["aimed_departure_time"][0:2])
+        Minute = int(departure["aimed_departure_time"][3:5])
+        logging.warning('no "expected" field,  "aimed_departure_time" used instead')
 
-    departureTimeMinutes = int((datetime.datetime(Year, Month, Day, Hour, Minute)
-                                - datetime.datetime(1970, 1, 1, 0, 0)).total_seconds()) // 60
+    try:
+        Year = int(expectedArrival["date"][0:4])
+        Month = int(expectedArrival["date"][5:7])
+        Day = int(expectedArrival["date"][8:10])
+    except TypeError:
+        Year = int(departure["date"][0:4])
+        Month = int(departure["date"][5:7])
+        Day = int(departure["date"][8:10])
+        logging.warning('no "expected" field,  "expected_departure_date" used instead')
 
-    return departureTimeMinutes
+    arrivalTimeMinutes = int((datetime.datetime(Year, Month, Day, Hour, Minute)
+                              - datetime.datetime(1970, 1, 1, 0, 0)).total_seconds()) // 60
+
+    return arrivalTimeMinutes, Hour, Minute
 
 
 def getNextFive(departures):
@@ -37,11 +53,19 @@ def getNextFive(departures):
             Buses = {"Number": None, "Destination": None, "ArrivalTime": None, "TimeMinutes": None}
             # this loop just prints out everything within the line 'busNumber'
             # print(departue)
-            arrivalTime = departure["expected"]["arrival"]["time"]
+            # arrivalTime = departure["expected"]["arrival"]["time"]
 
-            expectedArrival = departure["expected"]["arrival"]
+            # expectedArrival = departure["expected"]["arrival"]
 
-            arrivalTimeMinutes = timeConversion(expectedArrival)
+            arrivalTimeMinutes, Hour, Minute = timeConversion(departure)
+
+            if Minute < 10:
+                Minute = f'0{Minute}'
+
+            if Hour < 10:
+                Hour = f'0{Minute}'
+
+            arrivalTime = f'{str(Hour)}:{str(Minute)}'
 
             Buses["Number"] = busNumber
             Buses["Destination"] = departure["direction"]
@@ -55,13 +79,17 @@ def getNextFive(departures):
 
             i += 1
 
-    # sort buses by the earliest to arrive (ArrivalSeconds Key)
-    busList.sort(key=lambda random_word: Buses["TimeMinutes"])
+    # print(*busList, sep='\n')
 
-    for x in range(0, 5):
+    # sort buses by the earliest to arrive (ArrivalSeconds Key)
+    busList.sort(key=lambda y: y["TimeMinutes"])    # y keyword is non specific but does need to access correct key
+
+    busList = busList[0:5]
+
+    for x in range(0, len(busList)):
         del busList[x]["TimeMinutes"]
 
-    return busList[0:5]
+    return busList
 
 
 def main():
@@ -69,18 +97,20 @@ def main():
     logging.info(f'Program start at {now.strftime("%Y-%m-%d %H:%M:%S")}')
 
     # website link for example bus station to get a better idea of the layout
-    # http://transportapi.com/v3/uk/bus/stop/490000077E/live.json?app_id=c3e79790&app_key=8f91ea0737e54199559851b2312781be
+    # http://transportapi.com/v3/uk/bus/stop/0180BAC30592/live.json?app_id=c3e79790&app_key=8f91ea0737e54199559851b2312781be
     r = requests.get(f'http://transportapi.com/v3/uk/bus/stop/{Atcocode}/live.json?app_id={APP_ID}&app_key={APP_KEY}')
 
     response = r.json()
     departures = response["departures"]
+    name = response["name"]
+    print(name)
     # print(departures)
 
     nextFiveBuses = getNextFive(departures)
     # print(*nextFiveBuses, sep='\n')
 
-    for i in range(0, 5):
-        print(f'{nextFiveBuses[i]["Number"] :<4} {nextFiveBuses[i]["Destination"] :<20}'
+    for i in range(0, len(nextFiveBuses)):
+        print(f'{nextFiveBuses[i]["Number"] :<4} {nextFiveBuses[i]["Destination"] :<40}'
               f' {nextFiveBuses[i]["ArrivalTime"] :<5}')
 
 
