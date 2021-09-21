@@ -6,11 +6,6 @@ logging.basicConfig(filename='BusBoard.log', filemode='w', level=logging.DEBUG)
 
 APP_ID = 'c3e79790'
 APP_KEY = '8f91ea0737e54199559851b2312781be'
-# Atcocode = '0180BAC30592'
-# Atcocode = '490000077E'
-# Atcocode = '0180BAC30345'
-# Atcocode = '0180BAC30601'
-Atcocode = '0180BAA01347'
 
 
 def timeConversion(departure):
@@ -33,12 +28,20 @@ def timeConversion(departure):
         Year = int(departure["date"][0:4])
         Month = int(departure["date"][5:7])
         Day = int(departure["date"][8:10])
-        logging.warning('no "expected" field,  "expected_departure_date" used instead')
+        logging.warning('no "expected" field,  "date" used instead')
 
     arrivalTimeMinutes = int((datetime.datetime(Year, Month, Day, Hour, Minute)
                               - datetime.datetime(1970, 1, 1, 0, 0)).total_seconds()) // 60
 
-    return arrivalTimeMinutes, Hour, Minute
+    if Minute < 10:
+        Minute = f'0{Minute}'
+
+    if Hour < 10:
+        Hour = f'0{Hour}'
+
+    arrivalTime = f'{str(Hour)}:{str(Minute)}'
+
+    return arrivalTimeMinutes, arrivalTime
 
 
 def getNextFive(departures):
@@ -53,19 +56,8 @@ def getNextFive(departures):
             Buses = {"Number": None, "Destination": None, "ArrivalTime": None, "TimeMinutes": None}
             # this loop just prints out everything within the line 'busNumber'
             # print(departue)
-            # arrivalTime = departure["expected"]["arrival"]["time"]
 
-            # expectedArrival = departure["expected"]["arrival"]
-
-            arrivalTimeMinutes, Hour, Minute = timeConversion(departure)
-
-            if Minute < 10:
-                Minute = f'0{Minute}'
-
-            if Hour < 10:
-                Hour = f'0{Minute}'
-
-            arrivalTime = f'{str(Hour)}:{str(Minute)}'
+            arrivalTimeMinutes, arrivalTime = timeConversion(departure)
 
             Buses["Number"] = busNumber
             Buses["Destination"] = departure["direction"]
@@ -96,22 +88,50 @@ def main():
     now = datetime.datetime.now()
     logging.info(f'Program start at {now.strftime("%Y-%m-%d %H:%M:%S")}')
 
-    # website link for example bus station to get a better idea of the layout
-    # http://transportapi.com/v3/uk/bus/stop/0180BAC30592/live.json?app_id=c3e79790&app_key=8f91ea0737e54199559851b2312781be
-    r = requests.get(f'http://transportapi.com/v3/uk/bus/stop/{Atcocode}/live.json?app_id={APP_ID}&app_key={APP_KEY}')
+    try:
+        postcode = input('Please enter a valid UK Postcode:')
+        p = requests.get(f'https://api.postcodes.io/postcodes?q={postcode}')
+        postcodeInfo = p.json()
+        coordinates = postcodeInfo["result"]
+        lat = coordinates[0]["latitude"]
+        lon = coordinates[0]["longitude"]
 
-    response = r.json()
-    departures = response["departures"]
-    name = response["name"]
-    print(name)
-    # print(departures)
+    except TypeError:
+        print('I said a valid UK postcode you dingbat, you get Bath now')
+        postcode = 'BA2 1AX'
+        p = requests.get(f'https://api.postcodes.io/postcodes?q={postcode}')
+        postcodeInfo = p.json()
+        coordinates = postcodeInfo["result"]
+        lat = coordinates[0]["latitude"]
+        lon = coordinates[0]["longitude"]
 
-    nextFiveBuses = getNextFive(departures)
-    # print(*nextFiveBuses, sep='\n')
+    s = requests.get(f'http://transportapi.com/v3/uk/places.json?lat={lat}&lon={lon}&type=bus_stop&app_id={APP_ID}'
+                     f'&app_key={APP_KEY}')
 
-    for i in range(0, len(nextFiveBuses)):
-        print(f'{nextFiveBuses[i]["Number"] :<4} {nextFiveBuses[i]["Destination"] :<40}'
-              f' {nextFiveBuses[i]["ArrivalTime"] :<5}')
+    response_stops = s.json()
+    stops = response_stops["member"]
+
+    print('\nThe nearest bus stops and arrival times near you are:')
+
+    for ii in range(0, 2):
+
+        Atcocode = stops[ii]["atcocode"]
+        Distance = int(stops[ii]["distance"])
+
+        r = requests.get(f'http://transportapi.com/v3/uk/bus/stop/{Atcocode}/live.json?app_id={APP_ID}'
+                         f'&app_key={APP_KEY}')
+
+        response = r.json()
+        departures = response["departures"]
+        name = response["name"]
+        # display name of station
+        print(f'\n{name} ({Distance}m)')
+
+        nextFiveBuses = getNextFive(departures)
+
+        for i in range(0, len(nextFiveBuses)):
+            print(f'{nextFiveBuses[i]["Number"] :<4} {nextFiveBuses[i]["Destination"] :<45}'
+                  f' {nextFiveBuses[i]["ArrivalTime"] :<5}')
 
 
 if __name__ == "__main__":
