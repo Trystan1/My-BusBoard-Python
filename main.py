@@ -5,14 +5,13 @@ import logging
 logging.basicConfig(filename='BusBoard.log', filemode='w', level=logging.DEBUG)
 
 
-def getPostcode():
-    postcode = input('Please enter a valid UK Postcode:')
+def getPostcode(postcode):
     print('Thanks, querying...')
-    lat, lon = postcode2latlon(postcode)
+    lat, lon = postcode2LatLon(postcode)
     return lat, lon
 
 
-def postcode2latlon(postcode):
+def postcode2LatLon(postcode):
     postcodeInfo = postcodeRequest(postcode)
 
     if postcodeInfo['result'] is None:
@@ -44,17 +43,16 @@ def getBusStops(lat, lon):
 def getBusTimes(stops, ii):
     Atcocode = stops[ii]["atcocode"]
     Distance = int(stops[ii]["distance"])
+    name = stops[ii]["name"]
 
     r = requests.get(f'http://transportapi.com/v3/uk/bus/stop/{Atcocode}/live.json?app_id={APP_ID}'
                      f'&app_key={APP_KEY}')
-
     response = r.json()
     departures = response["departures"]
-    name = response["name"]
-    # display name of station
-    print(f'\n{name} ({Distance}m)')
-
     nextFiveBuses = getNextFive(departures)
+
+    nextFiveBuses.append({"Name": name, "Distance": Distance})
+
     return nextFiveBuses
 
 
@@ -68,9 +66,7 @@ def getNextFive(departures):
     for busNumber in departures:
         # loops through every individual bus of a given number (API only stores 3 at a time I think)
         for departure in departures[busNumber]:
-
             arrivalTimeMinutes, arrivalTime = timeConversion(departure)
-
             Buses = {"Number": busNumber, "Destination": departure["direction"], "ArrivalTime": arrivalTime,
                      "TimeMinutes": arrivalTimeMinutes}
             busList.append(Buses)
@@ -86,44 +82,51 @@ def getNextFive(departures):
     return busList
 
 
+def HMFunction(listName, key):
+    Hour = int(listName[key][0:2])
+    Minute = int(listName[key][3:5])
+    return Hour, Minute
+
+
+def YMDFunction(listName, key):
+    Year = int(listName[key][0:4])
+    Month = int(listName[key][5:7])
+    Day = int(listName[key][8:10])
+    return Year, Month, Day
+
+
 def timeConversion(departure):
 
     expectedArrival = departure["expected"]["arrival"]
 
     try:
-        Hour = int(expectedArrival["time"][0:2])
-        Minute = int(expectedArrival["time"][3:5])
+        Hour, Minute = HMFunction(expectedArrival, "time")
     except TypeError:
-        Hour = int(departure["aimed_departure_time"][0:2])
-        Minute = int(departure["aimed_departure_time"][3:5])
+        Hour, Minute = HMFunction(departure, "aimed_departure_time")
         logging.warning('no "expected" field,  "aimed_departure_time" used instead')
 
     try:
-        Year = int(expectedArrival["date"][0:4])
-        Month = int(expectedArrival["date"][5:7])
-        Day = int(expectedArrival["date"][8:10])
+        Year, Month, Day = YMDFunction(expectedArrival, "date")
     except TypeError:
-        Year = int(departure["date"][0:4])
-        Month = int(departure["date"][5:7])
-        Day = int(departure["date"][8:10])
+        Year, Month, Day = YMDFunction(departure, "date")
         logging.warning('no "expected" field,  "date" used instead')
 
     arrivalTimeMinutes = int((datetime.datetime(Year, Month, Day, Hour, Minute)
                               - datetime.datetime(1970, 1, 1, 0, 0)).total_seconds()) // 60
 
+    # correct date format for display
     if Minute < 10:
         Minute = f'0{Minute}'
-
     if Hour < 10:
         Hour = f'0{Hour}'
-
     arrivalTime = f'{str(Hour)}:{str(Minute)}'
 
     return arrivalTimeMinutes, arrivalTime
 
 
 def displayBusTimes(nextFiveBuses):
-    for i in range(0, len(nextFiveBuses)):
+    print(f'\n{nextFiveBuses[-1]["Name"]} ({nextFiveBuses[-1]["Distance"]}m)')
+    for i in range(0, len(nextFiveBuses)-1):
         print(f'{nextFiveBuses[i]["Number"] :<4} {nextFiveBuses[i]["Destination"] :<45}'
               f' {nextFiveBuses[i]["ArrivalTime"] :<5}')
 
@@ -132,13 +135,26 @@ def main():
     now = datetime.datetime.now()
     logging.info(f'Program start at {now.strftime("%Y-%m-%d %H:%M:%S")}')
 
-    lat, lon = getPostcode()
-    stops = getBusStops(lat, lon)
+    postcode = ''
+    while postcode != 'Quit':
 
-    print('\nThe nearest bus stops and arrival times near you are:')
-    for ii in range(0, 2):
-        nextFiveBuses = getBusTimes(stops, ii)
-        displayBusTimes(nextFiveBuses)
+        postcode = input('\nPlease enter a valid UK Postcode:')
+        if postcode == 'Quit':
+            logging.info('User quit the program')
+            break
+        logging.info(f'User queried postcode {postcode}')
+        lat, lon = getPostcode(postcode)
+        stops = getBusStops(lat, lon)
+        logging.info(f'Information requested from stops {stops[0]["name"]} & {stops[1]["name"]}')
+
+        print('\nThe nearest bus stops and arrival times near you are:')
+        for ii in range(0, 2):
+            nextFiveBuses = getBusTimes(stops, ii)
+            displayBusTimes(nextFiveBuses)
+        logging.info(f'Bus times printed for queried bus stops')
+
+    now = datetime.datetime.now()
+    logging.info(f'Program ended at {now.strftime("%Y-%m-%d %H:%M:%S")}')
 
 
 if __name__ == "__main__":
