@@ -76,6 +76,7 @@ def getNextFive(departures):
     busList.sort(key=lambda y: y["TimeMinutes"])    # y keyword is non specific but does need to access correct key
     busList = busList[0:5]
 
+    # delete un-needed dictionary entries
     for x in range(0, len(busList)):
         del busList[x]["TimeMinutes"]
 
