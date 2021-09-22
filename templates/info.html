@@ -7,11 +7,14 @@
         <p>You entered postcode <span>{{ postcode }}</span></p>
     </div>
         <p>Here is the arrival information for the nearest <span> {{ (listBusTimes | length) }} </span> bus stops:</p>
+
         {% for stop in range(listBusTimes | length) %}
             <h5><span>{{ listBusTimes[stop][0] }}</span></h5>
-            {% for bus in range(listBusTimes[stop] | length) %}
-                <div> {{ listBusTimes[stop][bus+1] }}</div>
-            {% endfor %}
+                {% for bus in range(listBusTimes[stop] | length) %}
+                    <div> {{ listBusTimes[stop][bus+1] }}</div>
+                {% endfor %}
+                <p></p>
         {% endfor %}
+
 </div>
 {% endblock %}

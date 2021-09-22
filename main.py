@@ -144,6 +144,15 @@ def listBusTimes(nextFiveBuses):
 
     return listFiveBuses
 
+def newlistBusTimes(nextFiveBuses):
+    listFiveBuses = []
+    listFiveBuses.append(f'\n{nextFiveBuses[0]["Name"]} ({nextFiveBuses[0]["Distance"]}m)')
+    for i in range(1, len(nextFiveBuses)):
+        listFiveBuses.append([f'{nextFiveBuses[i]["Number"] :<4}'], [f'{nextFiveBuses[i]["Destination"] :<45}'],
+                             [f' {nextFiveBuses[i]["ArrivalTime"] :<5}'])
+
+    return listFiveBuses
+
 
 def main(postcode):
 
@@ -151,14 +160,19 @@ def main(postcode):
     stops = getBusStops(lat, lon)
 
     print('\nThe nearest bus stops and arrival times near you are:')
-    noBusStops = 3
+    noBusStops = 2
     BusTimes = []
+    NewBusTimes = []
 
     for i in range(0, noBusStops):
         nextFiveBuses = getBusTimes(stops, i)
-        displayBusTimes(nextFiveBuses)
+        # displayBusTimes(nextFiveBuses)
         listBusTimes1 = listBusTimes(nextFiveBuses)     # convert list of dictionaries into list of lists
+        # listBusTimes2 = newlistBusTimes(nextFiveBuses)
+        # print(listBusTimes2)
         BusTimes.append(listBusTimes1)
+
+    print(*BusTimes, sep='\n')
 
     return BusTimes
 
