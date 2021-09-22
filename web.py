@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request
+from main import *
 
 app = Flask(__name__)
 
@@ -11,7 +12,12 @@ def index():
 @app.route("/busInfo")
 def busInfo():
     postcode = request.args.get('postcode')
-    return render_template('info.html', postcode=postcode)
+
+    BusTimes = main(postcode)
+    postcode = postcode.upper()
+
+    return render_template('info.html', postcode=postcode, listBusTimes=BusTimes)
 
 
-if __name__ == "__main__": app.run()
+if __name__ == "__main__":
+    app.run()

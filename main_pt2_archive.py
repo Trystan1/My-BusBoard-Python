@@ -45,25 +45,22 @@ def getBusTimes(stops, ii):
     Distance = int(stops[ii]["distance"])
     name = stops[ii]["name"]
 
-    nextFiveBuses = []
-    nextFiveBuses.append({"Name": name, "Distance": Distance, "TimeMinutes": 0})
-
     r = requests.get(f'http://transportapi.com/v3/uk/bus/stop/{Atcocode}/live.json?app_id={APP_ID}'
                      f'&app_key={APP_KEY}')
     response = r.json()
     departures = response["departures"]
-    nextFiveBuses = getNextFive(departures, nextFiveBuses)
+    nextFiveBuses = getNextFive(departures)
 
-    # nextFiveBuses.append({"Name": name, "Distance": Distance})
+    nextFiveBuses.append({"Name": name, "Distance": Distance})
 
     return nextFiveBuses
 
 
-def getNextFive(departures, busList):
+def getNextFive(departures):
     # returns a list of dictionaries which contain information on the next five buses expected to arrive at the given
     # bus stop
     i = 0
-    # busList = []
+    busList = []
     # loops through every bus number (consisting of several buses behind each other in the timetable)
     # busNumber is name in-specific, the bus number is the top level Key within 'departures'
     for busNumber in departures:
@@ -129,40 +126,37 @@ def timeConversion(departure):
 
 
 def displayBusTimes(nextFiveBuses):
-    print(f'\n{nextFiveBuses[0]["Name"]} ({nextFiveBuses[0]["Distance"]}m)')
-    for i in range(1, len(nextFiveBuses)):
+    print(f'\n{nextFiveBuses[-1]["Name"]} ({nextFiveBuses[-1]["Distance"]}m)')
+    for i in range(0, len(nextFiveBuses)-1):
         print(f'{nextFiveBuses[i]["Number"] :<4} {nextFiveBuses[i]["Destination"] :<45}'
               f' {nextFiveBuses[i]["ArrivalTime"] :<5}')
 
 
-def listBusTimes(nextFiveBuses):
-    listFiveBuses = []
-    listFiveBuses.append(f'\n{nextFiveBuses[0]["Name"]} ({nextFiveBuses[0]["Distance"]}m)')
-    for i in range(1, len(nextFiveBuses)):
-        listFiveBuses.append(f'{nextFiveBuses[i]["Number"] :<4} {nextFiveBuses[i]["Destination"] :<45}'
-                             f' {nextFiveBuses[i]["ArrivalTime"] :<5}')
+def main():
+    now = datetime.datetime.now()
+    logging.info(f'Program start at {now.strftime("%Y-%m-%d %H:%M:%S")}')
 
-    return listFiveBuses
+    postcode = ''
+    while postcode != 'Quit':
 
+        postcode = input('\nPlease enter a valid UK Postcode:')
+        if postcode == 'Quit':
+            logging.info('User quit the program')
+            break
+        logging.info(f'User queried postcode {postcode}')
+        lat, lon = getPostcode(postcode)
+        stops = getBusStops(lat, lon)
+        logging.info(f'Information requested from stops {stops[0]["name"]} & {stops[1]["name"]}')
 
-def main(postcode):
+        print('\nThe nearest bus stops and arrival times near you are:')
+        for ii in range(0, 2):
+            nextFiveBuses = getBusTimes(stops, ii)
+            displayBusTimes(nextFiveBuses)
+        logging.info(f'Bus times printed for queried bus stops')
 
-    lat, lon = getPostcode(postcode)
-    stops = getBusStops(lat, lon)
-
-    print('\nThe nearest bus stops and arrival times near you are:')
-    noBusStops = 3
-    BusTimes = []
-
-    for i in range(0, noBusStops):
-        nextFiveBuses = getBusTimes(stops, i)
-        displayBusTimes(nextFiveBuses)
-        listBusTimes1 = listBusTimes(nextFiveBuses)     # convert list of dictionaries into list of lists
-        BusTimes.append(listBusTimes1)
-
-    return BusTimes
+    now = datetime.datetime.now()
+    logging.info(f'Program ended at {now.strftime("%Y-%m-%d %H:%M:%S")}')
 
 
-# if __name__ == "__main__":
-#     postcode = 'OX49 5NU'
-#     main(postcode)
+if __name__ == "__main__":
+    main()
