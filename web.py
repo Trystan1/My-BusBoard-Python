@@ -12,8 +12,9 @@ def index():
 @app.route("/busInfo")
 def busInfo():
     postcode = request.args.get('postcode')
+    noBusStops = int(request.args.get('noBusStops'))
 
-    BusTimes = main(postcode)
+    BusTimes = main(postcode, noBusStops)
     postcode = postcode.upper()
 
     return render_template('info.html', postcode=postcode, listBusTimes=BusTimes)

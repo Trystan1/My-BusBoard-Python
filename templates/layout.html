@@ -13,5 +13,35 @@
 <div>
     {% block content %}{% endblock %}
 </div>
+<style>
+    .p1 {
+        width: 605px;
+        background-color: Black;
+        color: White;
+    }
+</style>
+<style>
+        table {
+            border-collapse: separate;
+            border-spacing: 0 15 px;
+        }
+        th, td {
+            width: 200px;
+            text-align: centre;
+            padding: 5px;
+        }
+        th {
+            background-color: Navy;
+            color: White;
+        }
+        tr:nth-child(odd) td:nth-child(odd), tr:nth-child(even) td:nth-child(even) {
+            background-color: OrangeRed;
+            color: White;
+        }
+        tr:nth-child(even) td:nth-child(odd), tr:nth-child(odd) td:nth-child(even) {
+            background-color: MediumBlue;
+            color: White;
+        }
+</style>
 </body>
 </html>
