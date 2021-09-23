@@ -4,9 +4,9 @@
 <div class="container body-content">
     <h2>Bus Information</h2>
     <div>
-        <p>You entered postcode <span>{{ postcode }}</span></p>
+        <p class="p2">You entered postcode <span>{{ postcode }}</span></p>
     </div>
-        <p>Here is the arrival information for the nearest <span> {{ (listBusTimes | length) }} </span> bus stops:</p>
+        <p class="p2">Here is the arrival information for the nearest <span> {{ (listBusTimes | length) }} </span> bus stops:</p>
         {% for stop in range(listBusTimes | length) %}
             <h5 class="p1"><span>{{ listBusTimes[stop][0] }}</span></h5>
             <table>

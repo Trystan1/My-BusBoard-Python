@@ -73,19 +73,6 @@ def getNextFive(departures, busList):
     return busList
 
 
-def HMFunction(listName, key):
-    Hour = int(listName[key][0:2])
-    Minute = int(listName[key][3:5])
-    return Hour, Minute
-
-
-def YMDFunction(listName, key):
-    Year = int(listName[key][0:4])
-    Month = int(listName[key][5:7])
-    Day = int(listName[key][8:10])
-    return Year, Month, Day
-
-
 def timeConversion(departure):
 
     expectedArrival = departure["expected"]["arrival"]
@@ -115,6 +102,19 @@ def timeConversion(departure):
     return arrivalTimeMinutes, arrivalTime
 
 
+def HMFunction(listName, key):
+    Hour = int(listName[key][0:2])
+    Minute = int(listName[key][3:5])
+    return Hour, Minute
+
+
+def YMDFunction(listName, key):
+    Year = int(listName[key][0:4])
+    Month = int(listName[key][5:7])
+    Day = int(listName[key][8:10])
+    return Year, Month, Day
+
+
 def listBusTimes(nextFiveBuses):
     listFiveBuses = [f'\n{nextFiveBuses[0]["Name"]} ({nextFiveBuses[0]["Distance"]}m)']
 
@@ -141,11 +141,4 @@ def main(postcode, noBusStops):
         outputBusTimes = listBusTimes(nextFiveBuses)
         BusTimes.append(outputBusTimes)
 
-    # print(*BusTimes, sep='\n')
-
     return BusTimes
-
-
-# if __name__ == "__main__":
-#     postcode = 'OX49 5NU'
-#     main(postcode)
